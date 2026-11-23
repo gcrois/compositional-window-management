@@ -1,0 +1,12 @@
+{
+  // The Domicile shell (src/domicile and everything it imports). Domicile's
+  // packages publish TypeScript sources, which tsc checks with these options,
+  // and they use enums, so `erasableSyntaxOnly` is off here.
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.shell.tsbuildinfo",
+    "erasableSyntaxOnly": false
+  },
+  "include": ["src/domicile"],
+  "exclude": []
+}

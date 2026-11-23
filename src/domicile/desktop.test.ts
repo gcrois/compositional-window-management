@@ -43,3 +43,25 @@ it('window sync keeps one pane per open window', () => {
   expect(titles().filter((t) => t !== 'new')).toEqual(others)
   expect(titles()).toContain('new')
 })
+
+// A JetBrains drop shadow sticks out on every side and is left out; a Gecko
+// app's content child is exactly the window's size and must be drawn.
+it('tells a decoration from a content child', async () => {
+  const { isDecoration } = await import('./desktop')
+  const win = { appId: 'w', width: 1000, height: 600 } as Parameters<typeof isDecoration>[0]
+  const child = (x: number, y: number, width: number, height: number) =>
+    ({ appId: 'c', parent: 'w', x, y, width, height, grab: false }) as Parameters<typeof isDecoration>[0]
+  expect(isDecoration(child(-20, -20, 1040, 640), [win])).toBe(true)
+  expect(isDecoration(child(0, 0, 1000, 600), [win])).toBe(false)
+  expect(isDecoration(child(10, 30, 200, 300), [win])).toBe(false)
+})
+
+it('treats a same-size child at the origin as content, not a menu', async () => {
+  const { isContentChild } = await import('./desktop')
+  const win = { appId: 'w', width: 1000, height: 600 } as Parameters<typeof isContentChild>[0]
+  const child = (x: number, y: number, width: number, height: number, grab = false) =>
+    ({ appId: 'c', parent: 'w', x, y, width, height, grab }) as Parameters<typeof isContentChild>[0]
+  expect(isContentChild(child(0, 0, 1000, 600), [win])).toBe(true)
+  expect(isContentChild(child(0, 0, 1000, 600, true), [win])).toBe(false)
+  expect(isContentChild(child(10, 30, 200, 300), [win])).toBe(false)
+})

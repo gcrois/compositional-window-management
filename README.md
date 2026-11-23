@@ -7,6 +7,7 @@ tabs, split, canvas, floating, grid, dock, document, outline, JSON, scrolling, m
 or timeline.
 
 ```sh
+nix develop     # Node, if it isn't installed (flake.nix)
 npm install
 npm run dev     # http://localhost:5173
 npm test        # model tests (lens round-trips, mirroring, cycles)
@@ -30,13 +31,13 @@ You need Linux with a Wayland session running (the desktop opens as a window ins
    Ubuntu, Fedora, openSUSE and Arch). With Nix instead:
 
    ```sh
-   nix build github:cprussin/domicile/release#domicile --accept-flake-config -o domicile
+   nix build github:cprussin/domicile/release#domicile -o domicile
    export PATH="$PWD/domicile/bin:$PATH"
    ```
 
-   The prebuilt Chromium comes from Domicile's binary cache, which Nix only uses for a
-   [trusted user](https://nix.dev/manual/nix/latest/command-ref/conf-file#conf-trusted-users); otherwise Nix
-   compiles Chromium itself, which takes hours.
+   The engine (Domicile's Chromium) is a prebuilt download from its GitHub releases; Nix builds only the
+   compositor and the bundled shells, which takes a few minutes. On NixOS, `nixosModules.default` adds a `domicile`
+   login session (see `programs.domicile`).
 
 2. Build the shell and start it:
 
@@ -60,12 +61,49 @@ The ⌥ keys move to **Super**, since a focused app would take ⌥ itself: Super
 switches the view, Super+W closes, Super+K / P / Z are the palette, go-to and undo (⌘K / ⌘P / ⌘Z in the browser).
 Super+Return opens a terminal, so "go into container" is Super+Shift+Return.
 
+| Key | Does |
+|---|---|
+| Super+Space (or Super+D) | Launch app: installed desktop entries, searched in the palette (⌘K › "Launch app…") |
+| Super+F | The focused window full screen, and back (apps asking for fullscreen get it too) |
+| Super+L | Lock |
+| Super+drag | Move the window under the pointer (any app, from anywhere on it), as the frame grip does |
+| Super+Shift+E, twice | Log out, back to the login screen (also ⌘K › "Log out") |
+
+### Getting out
+
+- **Super+Shift+E twice**, or ⌘K › "Log out": ends the session; pick GNOME (or another session) at the login screen.
+- **Ctrl+Alt+F3**: a text console. Domicile's engine handles this itself, below the shell, so it works even when the
+  shell is broken. Log in and run `loginctl terminate-session <id>` (`loginctl list-sessions` shows the id), or
+  `domicile load-shell @domicile-desktop/manganese` from a terminal on the desktop to swap in the stock shell.
+- **⌘K › "Switch to Domicile’s default shell"**: the same swap, keeping open windows.
+- A shell that fails to load is retried five times, then the desktop stops and you are back at the login screen.
+- Over SSH (or Tailscale) from another machine: `loginctl terminate-session <id>`.
+- If GNOME then bounces back to the login screen ("A graphical session is already running!" in the journal), the
+  Domicile session ended without its cleanup (a crash, or `loginctl terminate-session`) and, with linger, left
+  `graphical-session.target` up. From a console or SSH: `systemctl --user start --job-mode=replace-irreversibly
+  domicile-session-shutdown.target`. Super+Shift+E runs this itself before logging out.
+
 ### How it behaves
 
 - Closing an app removes its pane, and Super+W on a window's last pane closes the app.
+- An app that draws its own title bar (Firefox, GTK apps) gets CWM's header as a thin strip along its top; hover the
+  strip to drag, retitle or close the pane, or Super+drag the window itself. Apps that leave decorations to the window
+  manager keep the full header. ⌘K › "Always show window title bars" keeps it open everywhere.
+- A pane smaller than its app's minimum size (Firefox won't go under 500px wide) shows the window at its minimum,
+  scaled down to fit, instead of letting it spill past the pane.
+- Dialogs (file choosers, prompts: windows with a parent or a fixed size) float centered at their own size instead of
+  taking a pane. Drag their bar to move them; × or Super+W closes the focused one.
+- A pane that fails to render shows its error in place; the rest of the desktop keeps running.
 - Menus and tooltips are drawn in a page-level layer over their window, so a pane edge doesn't clip them.
 - A mirrored window renders in every placement, but a client has one size: the most recently laid-out placement sets
   it, and the others show a crop.
+- The shell draws what Domicile leaves to it (`src/domicile/Overlays.tsx`): the lock screen (Domicile locks before
+  sleep, and only the shell can take the passphrase), notifications, and portal dialogs (file pickers, screen-share
+  and screenshot pickers) through Domicile's `PortalDialogs`.
+- Wayland tools that work: `grim`/`slurp`, `wf-recorder`, `wl-clipboard`, clipboard managers. Domicile has no
+  layer-shell, so panels and notification daemons such as waybar or mako don't show.
+- X11 apps (Steam and its games) run through `xwayland-satellite`, which the shell starts on `DISPLAY=:11` when the
+  session has no X display, adding that `DISPLAY` to everything it launches (`src/domicile/x11.ts`).
 - `globalThis.cwm` exposes the store and key handler for driving the desktop over DevTools
   (`DOMICILE_ENGINE_ARGS=--remote-debugging-port=…`).
 

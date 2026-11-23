@@ -9,6 +9,7 @@ import { VIEW_TYPES, type Container, type Leaf, type NodeId, type Path, type Slo
 import { displayTitle, isAutoTitled } from '../model/titles'
 import { VIEW_INFO, splitEdgesIn } from './viewInfo'
 import { VIEW_COMPONENTS, VIEW_CONTROLS } from './registry'
+import { FrameBoundary } from './FrameBoundary'
 
 export const MAX_DEPTH = 24
 
@@ -41,7 +42,11 @@ export function NodeView(props: NodeViewProps) {
   const node = useStore((s) => s.doc.nodes[props.nodeId])
   if (!node) return <div className="missing">missing node</div>
   if (props.depth > MAX_DEPTH) return <div className="missing">∞ nesting limit</div>
-  return <Frame {...props} node={node} />
+  return (
+    <FrameBoundary label={node.title || node.id}>
+      <Frame {...props} node={node} />
+    </FrameBoundary>
+  )
 }
 
 function Frame({
@@ -115,6 +120,7 @@ function Frame({
               ref={drag.setNodeRef}
               {...drag.listeners}
               {...drag.attributes}
+              data-drag-handle={key}
             >
               ⠿
             </span>

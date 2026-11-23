@@ -22,5 +22,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // The Domicile shell type-checks in tsconfig.shell.json: its packages ship TypeScript with enums.
+  "exclude": ["src/domicile"]
 }

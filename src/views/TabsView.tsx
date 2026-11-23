@@ -108,6 +108,8 @@ function Tab({ container, slot, path, active }: { container: Container; slot: Sl
       ref={setRefs}
       {...drag.listeners}
       {...drag.attributes}
+      // Super+drag on a native window starts this tab's drag (src/domicile/moves.ts).
+      data-drag-handle={pathKey(childPath)}
       role="tab"
       aria-selected={active}
       data-slot-in={pathKey(path)}

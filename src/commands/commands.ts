@@ -560,8 +560,16 @@ export function rootItems(ctx: Ctx): Item[] {
       run: () => setTimeout(startTour, 50),
     },
   )
+  for (const extra of EXTRA_ROOT_ITEMS) items.push(...extra(ctx))
   return items
 }
+
+/**
+ * Commands a host adds to the palette's root page (the Domicile shell adds
+ * "Launch app…"), with entries in `PAGES` for their sub-pages.
+ */
+const EXTRA_ROOT_ITEMS: ((ctx: Ctx) => Item[])[] = []
+export const registerRootItems = (items: (ctx: Ctx) => Item[]) => EXTRA_ROOT_ITEMS.push(items)
 
 function reorder(ctx: Ctx, delta: number) {
   if (!ctx.parent || !ctx.slot) return
